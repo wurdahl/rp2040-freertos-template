@@ -18,7 +18,9 @@ pico_sdk_init()
 
 # Add subdirectories
 add_subdirectory(src)
+add_subdirectory(lib/BMP3)
+add_subdirectory(lib/common)
 
 # if you have anything in "lib" folder then uncomment below - remember to add a CMakeLists.txt
 # file to the "lib" directory
-#add_subdirectory(lib)
+# add_subdirectory(lib)

@@ -1,9 +1,10 @@
-#include "FreeRTOS.h"
-#include "task.h"
+/**\
+ * Copyright (c) 2022 Bosch Sensortec GmbH. All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ **/
+
 #include <stdio.h>
-#include <queue.h>
-#include "pico/stdlib.h"
-#include <string.h>
 
 #include "bmp3.h"
 #include "common.h"
@@ -21,111 +22,15 @@
 /* Maximum FIFO size */
 #define FIFO_MAX_SIZE     UINT16_C(512)
 
-static QueueHandle_t xQueue = NULL;
+/* Iteration count to run example code */
+#define ITERATION         UINT8_C(10)
 
-#include "hardware/timer.h"
-#include "pico/stdlib.h"
+/************************************************************************/
+/*********                     Test code                           ******/
+/************************************************************************/
 
-/* Define a variable to hold the initial timer count. */
-static uint32_t start_time;
-
-/* Configure Timer 1 to generate the runtime statistics counter. */
-void configureTimerForRunTimeStats(void) {
-    /* Store the initial count of the microsecond timer. */
-    start_time = time_us_32();
-}
-
-/* Get the current value of the runtime counter. */
-unsigned long getRunTimeCounterValue(void) {
-    /* Return the elapsed time in microseconds since start_time. */
-    return time_us_32() - start_time;
-}
-
-void printRunTimeStats(void) {
-    char runtimeStatsBuffer[1024];
-    memset(runtimeStatsBuffer, 0, sizeof(runtimeStatsBuffer));
-    
-    // Get runtime statistics
-    vTaskGetRunTimeStats(runtimeStatsBuffer);
-
-    // Print the runtime statistics
-    printf("Task Name\t\tRuntime\t\tPercentage\n");
-    printf("---------\t\t-------\t\t----------\n");
-
-    unsigned long totalRuntime = getRunTimeCounterValue();
-    char *line = strtok(runtimeStatsBuffer, "\n");
-    while (line != NULL) {
-        char taskName[configMAX_TASK_NAME_LEN];
-        unsigned long runtime;
-
-        // Parse the line to extract task name and runtime
-        if (sscanf(line, "%s %lu", taskName, &runtime) == 2) {
-            // Calculate percentage
-            float percentage = (runtime * 100.0) / totalRuntime;
-            printf("%s\t\t%lu\t\t%.2f%%\n", taskName, runtime, percentage);
-        }
-
-        line = strtok(NULL, "\n");
-    }
-}
-
-void led_task()
-{   
-    const uint LED_PIN = PICO_DEFAULT_LED_PIN;
-    uint uIValueToSend = 0;
-    gpio_init(LED_PIN);
-    gpio_set_dir(LED_PIN, GPIO_OUT);
-    while (true) {
-        gpio_put(LED_PIN, 1);
-        uIValueToSend = 1;
-        xQueueSend(xQueue, &uIValueToSend, 0U);
-        vTaskDelay(100);
-
-        gpio_put(LED_PIN, 0);
-        uIValueToSend = 0;
-        xQueueSend(xQueue, &uIValueToSend, 0U);
-        vTaskDelay(100);
-    }
-}
-
-void serial_task(){
-
-    uint uIReceivedValue;
-
-    while(1){
-        xQueueReceive(xQueue, &uIReceivedValue, portMAX_DELAY);
-
-        if(uIReceivedValue == 1){
-            printf("LED is ON! \n");
-        }
-        if(uIReceivedValue == 0){
-            printf("LED is OFF! \n");
-        }
-
-    }
-
-}
-
-void runtime_stats_task(void *pvParameters) {
-    while (true) {
-        printRunTimeStats();
-        vTaskDelay(pdMS_TO_TICKS(5000)); // Delay for 5 seconds
-    }
-}
-
-void task1(void *pvParameters){
-
-    while(true){
-        printf("Task 1 is currently running\n");
-        //for(int i = 0; i<20000000;i++){};
-        vTaskDelay(100);
-    }
-
-}
-
-void task2(void *pvParameters){
-
-    //BMP 390 Stuff
+int main(void)
+{
     struct bmp3_dev dev;
     int8_t rslt;
 
@@ -188,9 +93,9 @@ void task2(void *pvParameters){
 
     printf("Read Fifo full interrupt data\n");
 
-    while(true){
-
-                rslt = bmp3_get_status(&status, &dev);
+    while (try <= ITERATION)
+    {
+        rslt = bmp3_get_status(&status, &dev);
         bmp3_check_rslt("bmp3_get_status", rslt);
 
         if ((rslt == BMP3_OK) && (status.intr.fifo_full == BMP3_ENABLE))
@@ -231,29 +136,11 @@ void task2(void *pvParameters){
                 }
             }
 
+            try++;
         }
-    vTaskDelay(100);
-
     }
-}
 
-int main(){
-    stdio_init_all();
+    bmp3_coines_deinit();
 
-    printf("program beginning\n");
-
-    configureTimerForRunTimeStats();
-
-    xQueue = xQueueCreate(1,sizeof(uint));
-
-
-    // xTaskCreate(led_task, "LED_Task", 256, NULL, 1, NULL);
-    // xTaskCreate(serial_task, "Serial_Task", 256, NULL, 1, NULL);
-    xTaskCreate(task1,"Task 1", 256, NULL, 1, NULL);
-    xTaskCreate(task2,"Task 2", 256, NULL, 1, NULL);
-    xTaskCreate(runtime_stats_task, "Runtime_Stats_Task", 1024, NULL, 3, NULL);
-
-    vTaskStartScheduler();
-
-    while(1){};
+    return rslt;
 }

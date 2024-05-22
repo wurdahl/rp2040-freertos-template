@@ -32,12 +32,10 @@ static uint8_t dev_addr;
  * I2C read function - re-written by william for RP2040
  * similar to the write, but we must first write to the device which register we want data from (last arguement must be true to "maintain master control of the bus")
  * then read in the data to a buffer with the correct length
- * ensure that these functions are used in this way
- * ensure I am doing the right level of lowness
  */
 BMP3_INTF_RET_TYPE bmp3_i2c_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, void *intf_ptr){
 
-    //uint8_t device_addr = *(uint8_t*)intf_ptr;
+    uint8_t something = *(uint8_t*)intf_ptr;
     uint8_t device_addr = BMP3_ADDR_I2C_SEC;
 
    // Write the register address to the device
@@ -150,8 +148,9 @@ BMP3_INTF_RET_TYPE bmp3_interface_init(struct bmp3_dev *bmp3, uint8_t intf){
 
     printf("SDA_PIN: %d, SCL_PIN: %d\n", SDA_PIN, SCL_PIN);
 
-    // Initialize I2C at 100 kHz
-    i2c_init(I2C_PORT, 100 * 1000);
+    // Initialize I2C at 400 kHz
+    // beware 100 kHZ may more stable
+    i2c_init(I2C_PORT, 400 * 1000);
     
     // Set up I2C pins
     gpio_set_function(SDA_PIN, GPIO_FUNC_I2C);

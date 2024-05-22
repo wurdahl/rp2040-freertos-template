@@ -37,7 +37,8 @@ static uint8_t dev_addr;
  */
 BMP3_INTF_RET_TYPE bmp3_i2c_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, void *intf_ptr){
 
-    uint8_t device_addr = *(uint8_t*)intf_ptr;
+    //uint8_t device_addr = *(uint8_t*)intf_ptr;
+    uint8_t device_addr = BMP3_ADDR_I2C_SEC;
 
    // Write the register address to the device
     int write_result = i2c_write_blocking(I2C_PORT, device_addr, &reg_addr, 1, true);
@@ -62,7 +63,8 @@ BMP3_INTF_RET_TYPE bmp3_i2c_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t l
  */
 BMP3_INTF_RET_TYPE bmp3_i2c_write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t len, void *intf_ptr)
 {
-    uint8_t device_addr = *(uint8_t*)intf_ptr;
+    //uint8_t device_addr = *(uint8_t*)intf_ptr;
+    uint8_t device_addr = BMP3_ADDR_I2C_SEC;
 
     (void)intf_ptr;
 

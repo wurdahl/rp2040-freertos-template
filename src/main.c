@@ -190,7 +190,7 @@ void task2(void *pvParameters){
 
     while(true){
 
-                rslt = bmp3_get_status(&status, &dev);
+        rslt = bmp3_get_status(&status, &dev);
         bmp3_check_rslt("bmp3_get_status", rslt);
 
         if ((rslt == BMP3_OK) && (status.intr.fifo_full == BMP3_ENABLE))
@@ -250,7 +250,7 @@ int main(){
     // xTaskCreate(led_task, "LED_Task", 256, NULL, 1, NULL);
     // xTaskCreate(serial_task, "Serial_Task", 256, NULL, 1, NULL);
     xTaskCreate(task1,"Task 1", 256, NULL, 1, NULL);
-    xTaskCreate(task2,"Task 2", 256, NULL, 1, NULL);
+    xTaskCreate(task2,"Task 2", 8192, NULL, 1, NULL);
     xTaskCreate(runtime_stats_task, "Runtime_Stats_Task", 1024, NULL, 3, NULL);
 
     vTaskStartScheduler();

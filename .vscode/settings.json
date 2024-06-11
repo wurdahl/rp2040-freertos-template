@@ -24,4 +24,7 @@
   "cmake.generator": "Ninja",
   "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
   "C_Cpp.errorSquiggles": "enabled",
+  "files.associations": {
+    "binary_info.h": "c"
+  },
 }

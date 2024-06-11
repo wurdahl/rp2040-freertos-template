@@ -5,12 +5,19 @@
 #include "pico/stdlib.h"
 #include <string.h>
 
-#include "bmp3.h"
 #include "common.h"
+#include "bmp5.h"
 
 /************************************************************************/
 /*********                     Macros                              ******/
 /************************************************************************/
+#define LOOP_COUNT                  UINT8_C(20)
+#define THRESHOLD_LEVEL             UINT8_C(8)
+#define BMP5_FIFO_DATA_BUFFER_SIZE  UINT8_C(96)
+#define BMP5_FIFO_DATA_USER_LENGTH  UINT8_C(96)
+#define BMP5_FIFO_P_T_FRAME_COUNT   UINT8_C(16)
+#define BMP5_FIFO_T_FRAME_COUNT     UINT8_C(32)
+#define BMP5_FIFO_P_FRAME_COUNT     UINT8_C(32)
 
 /* Defines frame count requested
  * As, only Pressure is enabled in this example,
@@ -29,6 +36,8 @@
 
 #define PRESSURE_READING_FREQ   100
 #define TASK_1_FREQ             100
+
+#define BMP5_THRESHOLD_LEVEL 10
 
 static QueueHandle_t xQueue = NULL;
 
@@ -118,75 +127,111 @@ void task1(void *pvParameters){
 
 }
 
-
-void BMPPressureWaterMark(void *pvParameters){
-    struct bmp3_dev dev;
+static int8_t set_config(struct bmp5_fifo *fifo, struct bmp5_dev *dev)
+{
     int8_t rslt;
+    struct bmp5_iir_config set_iir_cfg;
+    struct bmp5_osr_odr_press_config osr_odr_press_cfg;
+    struct bmp5_int_source_select int_source_select;
 
-    uint16_t settings_sel;
-    uint16_t settings_fifo;
-    uint8_t loop = 1;
-    uint8_t index = 0;
-    uint16_t watermark = 0;
-    uint16_t fifo_length = 0;
-    uint8_t fifo_data[FIFO_MAX_SIZE];
-    struct bmp3_data fifo_p_t_data[FIFO_MAX_SIZE];
-    struct bmp3_fifo_settings fifo_settings = { 0 };
-    struct bmp3_settings settings = { 0 };
-    struct bmp3_fifo_data fifo = { 0 };
-    struct bmp3_status status = { { 0 } };
+    rslt = bmp5_set_power_mode(BMP5_POWERMODE_STANDBY, dev);
+    bmp5_error_codes_print_result("bmp5_set_power_mode1", rslt);
 
-    /* Interface reference is given as a parameter
-     *         For I2C : BMP3_I2C_INTF
-     *         For SPI : BMP3_SPI_INTF
-     */
-    rslt = bmp3_interface_init(&dev, BMP3_I2C_INTF);
-    bmp3_check_rslt("bmp3_interface_init", rslt);
+    if (rslt == BMP5_OK)
+    {
+        /* Get default odr */
+        rslt = bmp5_get_osr_odr_press_config(&osr_odr_press_cfg, dev);
+        bmp5_error_codes_print_result("bmp5_get_osr_odr_press_config", rslt);
 
-    rslt = bmp3_init(&dev);
-    bmp3_check_rslt("bmp3_init", rslt);
+        if (rslt == BMP5_OK)
+        {
+            /* Set ODR as 50Hz */
+            osr_odr_press_cfg.odr = BMP5_ODR_50_HZ;
 
-    fifo_settings.mode = BMP3_ENABLE;
-    fifo_settings.press_en = BMP3_ENABLE;
-    fifo_settings.temp_en = BMP3_ENABLE;
-    fifo_settings.filter_en = BMP3_ENABLE;
-    fifo_settings.down_sampling = BMP3_FIFO_NO_SUBSAMPLING;
-    fifo_settings.fwtm_en = BMP3_ENABLE;
-    fifo_settings.time_en = BMP3_ENABLE;
+            /* Enable pressure */
+            osr_odr_press_cfg.press_en = BMP5_ENABLE;
 
-    fifo.buffer = fifo_data;
-    fifo.req_frames = FIFO_WATERMARK_FRAME_COUNT;
+            /* Set Over-sampling rate with respect to odr */
+            osr_odr_press_cfg.osr_t = BMP5_OVERSAMPLING_8X;
+            osr_odr_press_cfg.osr_p = BMP5_OVERSAMPLING_64X;
 
-    settings.press_en = BMP3_ENABLE;
-    settings.temp_en = BMP3_ENABLE;
-    settings.odr_filter.press_os = BMP3_FIFO_SUBSAMPLING_4X;
-    settings.odr_filter.temp_os = BMP3_FIFO_SUBSAMPLING_4X;
-    settings.odr_filter.odr = BMP3_ODR_50_HZ;
-    settings.int_settings.latch = BMP3_ENABLE;
+            rslt = bmp5_set_osr_odr_press_config(&osr_odr_press_cfg, dev);
+            bmp5_error_codes_print_result("bmp5_set_osr_odr_press_config", rslt);
 
-    settings_sel = BMP3_SEL_PRESS_EN | BMP3_SEL_TEMP_EN | BMP3_SEL_PRESS_OS | BMP3_SEL_TEMP_OS | BMP3_SEL_ODR;
+            if (rslt == BMP5_OK)
+            {
+                set_iir_cfg.set_iir_t = BMP5_IIR_FILTER_COEFF_1;
+                set_iir_cfg.set_iir_p = BMP5_IIR_FILTER_COEFF_1;
 
-    settings_fifo = BMP3_SEL_FIFO_MODE | BMP3_SEL_FIFO_PRESS_EN | BMP3_SEL_FIFO_TEMP_EN | BMP3_SEL_FIFO_TIME_EN |
-                    BMP3_SEL_FIFO_FWTM_EN | BMP3_SEL_FIFO_DOWN_SAMPLING | BMP3_SEL_FIFO_FILTER_EN;
+                rslt = bmp5_set_iir_config(&set_iir_cfg, dev);
+                bmp5_error_codes_print_result("bmp5_set_iir_config", rslt);
+            }
+        }
 
-    rslt = bmp3_set_sensor_settings(settings_sel, &settings, &dev);
-    bmp3_check_rslt("bmp3_set_sensor_settings", rslt);
+        if (rslt == BMP5_OK)
+        {
+            rslt = bmp5_get_fifo_configuration(fifo, dev);
+            bmp5_error_codes_print_result("bmp5_get_fifo_configuration", rslt);
 
-    settings.op_mode = BMP3_MODE_NORMAL;
-    rslt = bmp3_set_op_mode(&settings, &dev);
-    bmp3_check_rslt("bmp3_set_op_mode", rslt);
+            if (rslt == BMP5_OK)
+            {
+                fifo->mode = BMP5_FIFO_MODE_STREAMING;
 
-    rslt = bmp3_set_fifo_watermark(&fifo, &fifo_settings, &dev);
-    bmp3_check_rslt("bmp3_set_fifo_watermark", rslt);
+                /* Frame selection can be used to select data frames,
+                 * pressure data only(32 frames) - BMP5_FIFO_PRESSURE_DATA
+                 * temperature data only(32 frames) - BMP5_FIFO_TEMPERATURE_DATA
+                 * both pressure and temperature data(16 frames) - BMP5_FIFO_PRESS_TEMP_DATA
+                 * Here, both pressure and temperature data is selected(BMP5_FIFO_PRESS_TEMP_DATA)
+                 */
+                fifo->frame_sel = BMP5_FIFO_PRESS_TEMP_DATA;
+                fifo->dec_sel = BMP5_FIFO_NO_DOWNSAMPLING;
+                fifo->threshold = BMP5_THRESHOLD_LEVEL;
+                fifo->set_fifo_iir_t = BMP5_ENABLE;
+                fifo->set_fifo_iir_p = BMP5_ENABLE;
 
-    rslt = bmp3_set_fifo_settings(settings_fifo, &fifo_settings, &dev);
-    bmp3_check_rslt("bmp3_set_fifo_settings", rslt);
+                rslt = bmp5_set_fifo_configuration(fifo, dev);
+                bmp5_error_codes_print_result("bmp5_set_fifo_configuration", rslt);
+            }
+        }
 
-    rslt = bmp3_get_fifo_settings(&fifo_settings, &dev);
-    bmp3_check_rslt("bmp3_get_fifo_settings", rslt);
+        if (rslt == BMP5_OK)
+        {
+            rslt = bmp5_configure_interrupt(BMP5_PULSED, BMP5_ACTIVE_HIGH, BMP5_INTR_PUSH_PULL, BMP5_INTR_ENABLE, dev);
+            bmp5_error_codes_print_result("bmp5_configure_interrupt", rslt);
 
-    printf("Read Fifo watermark interrupt data with sensor time\n");
+            if (rslt == BMP5_OK)
+            {
+                /* Note : Select INT_SOURCE after configuring interrupt */
+                int_source_select.fifo_thres_en = BMP5_ENABLE;
+                rslt = bmp5_int_source_select(&int_source_select, dev);
+                bmp5_error_codes_print_result("bmp5_int_source_select", rslt);
+            }
+        }
 
+        /*
+         * FIFO example can be executed on,
+         * normal mode - BMP5_POWERMODE_NORMAL
+         * continuous mode - BMP5_POWERMODE_CONTINOUS
+         * Here, used normal mode (BMP5_POWERMODE_NORMAL)
+         */
+        rslt = bmp5_set_power_mode(BMP5_POWERMODE_NORMAL, dev);
+        bmp5_error_codes_print_result("bmp5_set_power_mode2", rslt);
+    }
+
+    return rslt;
+}
+
+static int8_t get_fifo_data(struct bmp5_fifo *fifo, struct bmp5_dev *dev)
+{
+    int8_t rslt = 0;
+    uint8_t idx = 0;
+    uint8_t loop = 0;
+    uint8_t int_status;
+    uint8_t fifo_buffer[BMP5_FIFO_DATA_BUFFER_SIZE];
+    struct bmp5_sensor_data sensor_data[BMP5_FIFO_P_T_FRAME_COUNT] = { { 0 } };
+
+
+    //WRONG - EITHER DO INTERRUPT OR POLL - NOT BOTH
     //Code to run task every .1 seconds
     TickType_t xLastWakeTime;
     const TickType_t xFrequency = PRESSURE_READING_FREQ; //every 100 ticks run this thread
@@ -195,66 +240,94 @@ void BMPPressureWaterMark(void *pvParameters){
     // Initialise the xLastWakeTime variable with the current time.
     xLastWakeTime = xTaskGetTickCount();
 
-    while (true){
+    while (true)
+    {
 
         xWasDelayed = xTaskDelayUntil(&xLastWakeTime, xFrequency);
 
         if(xWasDelayed==pdFALSE){
-            printf("****PRESSURE TASK TOOK TOO LONG TO EXECUTE****");
+            printf("****PRESSURE TASK WAS DELAYED****");
         }
 
-        rslt = bmp3_get_status(&status, &dev);
-        bmp3_check_rslt("bmp3_get_status", rslt);
+        rslt = bmp5_get_interrupt_status(&int_status, dev);
+        bmp5_error_codes_print_result("bmp5_get_interrupt_status", rslt);
 
-        if ((rslt == BMP3_OK) && (status.intr.fifo_wm == BMP3_ENABLE))
+        if (int_status & BMP5_INT_ASSERTED_FIFO_THRES)
         {
-            rslt = bmp3_get_fifo_length(&fifo_length, &dev);
-            bmp3_check_rslt("bmp3_get_fifo_length", rslt);
+            fifo->length = BMP5_FIFO_DATA_USER_LENGTH;
+            fifo->data = fifo_buffer;
 
-            rslt = bmp3_get_fifo_watermark(&watermark, &dev);
-            bmp3_check_rslt("bmp3_get_fifo_watermark", rslt);
+            printf("\nIteration: %d\n", loop);
+            printf("Each fifo frame contains 6 bytes of data\n");
+            printf("Fifo data bytes requested: %d\n", fifo->length);
 
-            rslt = bmp3_get_fifo_data(&fifo, &fifo_settings, &dev);
-            bmp3_check_rslt("bmp3_get_fifo_data", rslt);
+            rslt = bmp5_get_fifo_data(fifo, dev);
+            bmp5_error_codes_print_result("bmp5_get_fifo_data", rslt);
 
-            /* NOTE : Read status register again to clear FIFO watermark interrupt status */
-            rslt = bmp3_get_status(&status, &dev);
-            bmp3_check_rslt("bmp3_get_status", rslt);
+            printf("Fifo data bytes available: %d\n", fifo->length);
+            printf("Fifo threshold level : %d\n", fifo->threshold);
+            printf("Fifo frames available: %d\n", fifo->fifo_count);
 
-            if (rslt == BMP3_OK)
+            if (rslt == BMP5_OK)
             {
-                rslt = bmp3_extract_fifo_data(fifo_p_t_data, &fifo, &dev);
-                bmp3_check_rslt("bmp3_extract_fifo_data", rslt);
+                rslt = bmp5_extract_fifo_data(fifo, sensor_data);
+                bmp5_error_codes_print_result("bmp5_extract_fifo_data", rslt);
 
-                printf("\nIteration : %d\n", loop);
-                printf("Watermark level : %d\n", watermark);
-                printf("Available fifo length : %d\n", fifo_length);
-                printf("Fifo byte count from fifo structure : %d\n", fifo.byte_count);
-
-                printf("FIFO compensation Pressure and Temperature frames requested : %d\n", fifo.req_frames);
-
-                printf("FIFO frames extracted : %d\n", fifo.parsed_frames);
-
-                for (index = 0; index < fifo.parsed_frames; index++)
+                if (rslt == BMP5_OK)
                 {
-                    #ifdef BMP3_FLOAT_COMPENSATION
-                    printf("Frame[%d]  T: %.2f deg C, P: %.2f Pa, Alt: %.2f m\n", index, (fifo_p_t_data[index].temperature),
-                           (fifo_p_t_data[index].pressure), calculateAltitude(fifo_p_t_data[index].pressure));
-                    #else
-                    printf("Frame[%d]  T: %ld deg C, P: %lu Pa\n", index,
-                           (long int)(int32_t)(fifo_p_t_data[index].temperature / 100),
-                           (long unsigned int)(uint32_t)(fifo_p_t_data[index].pressure / 100));
-                    #endif
+                    printf("\nData, Pressure (Pa), Temperature (deg C)\n");
+
+                    for (idx = 0; idx < fifo->fifo_count; idx++)
+                    {
+#ifdef BMP5_USE_FIXED_POINT
+                        printf("%d, %lu, %ld\n",
+                               idx,
+                               (long unsigned int)sensor_data[idx].pressure,
+                               (long int)sensor_data[idx].temperature);
+#else
+                        printf("%d, %f, %f\n", idx, sensor_data[idx].pressure, sensor_data[idx].temperature);
+#endif
+                    }
                 }
-
-                printf("Sensor time : %lu\n", (long unsigned int)fifo.sensor_time);
-
-                loop++;
             }
+
+            loop++;
+        }
+    }
+
+    return rslt;
+}
+
+
+void BMP5PressureWaterMark(void *pvParameters){
+    int8_t rslt;
+    struct bmp5_dev dev;
+    struct bmp5_fifo fifo;
+
+    /* Interface reference is given as a parameter
+     * For I2C : BMP5_I2C_INTF
+     * For SPI : BMP5_SPI_INTF
+     */
+    rslt = bmp5_interface_init(&dev, BMP5_I2C_INTF);
+    bmp5_error_codes_print_result("bmp5_interface_init", rslt);
+
+    if (rslt == BMP5_OK)
+    {
+        rslt = bmp5_init(&dev);
+        bmp5_error_codes_print_result("bmp5_init", rslt);
+
+        if (rslt == BMP5_OK)
+        {
+            rslt = set_config(&fifo, &dev);
+            bmp5_error_codes_print_result("set_config", rslt);
         }
 
+        if (rslt == BMP5_OK)
+        {
+            rslt = get_fifo_data(&fifo, &dev);
+            bmp5_error_codes_print_result("get_fifo_data", rslt);
+        }
     }
-    
 }
 
 int main(){
@@ -269,7 +342,7 @@ int main(){
     xTaskCreate(task1,"Task1", 256, NULL, 1, NULL);
     //xTaskCreate(task2,"Pressure", 8192, NULL, 10, NULL);
     //xTaskCreate(BMPPressureWaterMark,"Pressure", 8192, NULL, 10, NULL);
-    xTaskCreateAffinitySet(BMPPressureWaterMark, "Pressure", 8192, NULL, 10, 1, NULL);
+    xTaskCreateAffinitySet(BMP5PressureWaterMark, "Pressure", 8192, NULL, 10, 1, NULL);
     xTaskCreate(runtime_stats_task, "Runtime_Stats_Task", 1024, NULL, 3, NULL);
 
     vTaskStartScheduler();

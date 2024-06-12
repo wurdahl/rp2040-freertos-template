@@ -11,6 +11,8 @@ target_link_libraries(${ProjectName}
     FreeRTOS-Kernel-Heap4
     BMP5
     COMMONBMP5
+    BMI08X
+    COMMONBMI08X
     )
 
 pico_add_extra_outputs(${ProjectName})

@@ -1,4 +1,3 @@
-# rp2040-freertos-template
-This is a template project for developing FreeRTOS based applications on Raspberry Pi RP2040 based boards. This template uses the "official" RP2040 port from the Raspberry Pi Foundation. My previous repo used the generic Cortex M0 port so this one corrects that. Previous Repo retained as tutorials rely on it. 
+# ACE 3.0 Development Board Code
 
-Unmodified, this project will spawn a single task to rapidly blink the LED on and off.
+Work is being done to communicate with all of the sensors on the board (BMP581, BMI088, BMM350). In the future, all sensors will be read and a kalman filter will fuse the data into a 3d state estimation. Also, SD card slot will be used to log state data for view after flights. FreeRTOS is used to coordinate work between tasks.

@@ -42,8 +42,8 @@ static uint8_t dev_addr;
  */
 BMP5_INTF_RET_TYPE bmp5_i2c_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t length, void *intf_ptr)
 {
-    //uint8_t device_addr = *(uint8_t*)intf_ptr;
-    uint8_t device_addr = BMP5_I2C_ADDR_PRIM;
+    uint8_t device_addr = *(uint8_t*)intf_ptr;
+    //uint8_t device_addr = BMP5_I2C_ADDR_PRIM;
 
    // Write the register address to the device
     int write_result = i2c_write_blocking(I2C_PORT, device_addr, &reg_addr, 1, TRUE);
@@ -65,8 +65,8 @@ BMP5_INTF_RET_TYPE bmp5_i2c_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t l
  */
 BMP5_INTF_RET_TYPE bmp5_i2c_write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length, void *intf_ptr)
 {
-    //uint8_t device_addr = *(uint8_t*)intf_ptr;
-    uint8_t device_addr = BMP5_I2C_ADDR_PRIM;
+    uint8_t device_addr = *(uint8_t*)intf_ptr;
+    //uint8_t device_addr = BMP5_I2C_ADDR_PRIM;
 
 
     (void)intf_ptr;
@@ -197,7 +197,7 @@ int8_t bmp5_interface_init(struct bmp5_dev *bmp5_dev, uint8_t intf)
     // Make the I2C pins available to picotool
     bi_decl(bi_2pins_with_func(SDA_PIN, SCL_PIN, GPIO_FUNC_I2C));
 
-    dev_addr = BMP5_I2C_ADDR_SEC;
+    dev_addr = BMP5_I2C_ADDR_PRIM;
     bmp5_dev->read = bmp5_i2c_read;
     bmp5_dev->write = bmp5_i2c_write;
     bmp5_dev->intf = BMP5_I2C_INTF;

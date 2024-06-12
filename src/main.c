@@ -146,7 +146,7 @@ static int8_t set_config(struct bmp5_fifo *fifo, struct bmp5_dev *dev)
         if (rslt == BMP5_OK)
         {
             /* Set ODR as 50Hz */
-            osr_odr_press_cfg.odr = BMP5_ODR_50_HZ;
+            osr_odr_press_cfg.odr = BMP5_ODR_100_2_HZ;
 
             /* Enable pressure */
             osr_odr_press_cfg.press_en = BMP5_ENABLE;
@@ -252,7 +252,8 @@ static int8_t get_fifo_data(struct bmp5_fifo *fifo, struct bmp5_dev *dev)
         rslt = bmp5_get_interrupt_status(&int_status, dev);
         bmp5_error_codes_print_result("bmp5_get_interrupt_status", rslt);
 
-        if (int_status & BMP5_INT_ASSERTED_FIFO_THRES)
+        //if (int_status & BMP5_INT_ASSERTED_FIFO_THRES)
+        if(true)
         {
             fifo->length = BMP5_FIFO_DATA_USER_LENGTH;
             fifo->data = fifo_buffer;
@@ -275,7 +276,7 @@ static int8_t get_fifo_data(struct bmp5_fifo *fifo, struct bmp5_dev *dev)
 
                 if (rslt == BMP5_OK)
                 {
-                    printf("\nData, Pressure (Pa), Temperature (deg C)\n");
+                    printf("\nData, Pressure (Pa), Altitude (m), Temperature (deg C)\n");
 
                     for (idx = 0; idx < fifo->fifo_count; idx++)
                     {
@@ -285,7 +286,7 @@ static int8_t get_fifo_data(struct bmp5_fifo *fifo, struct bmp5_dev *dev)
                                (long unsigned int)sensor_data[idx].pressure,
                                (long int)sensor_data[idx].temperature);
 #else
-                        printf("%d, %f, %f\n", idx, sensor_data[idx].pressure, sensor_data[idx].temperature);
+                        printf("%d, %f, %f, %f\n", idx, sensor_data[idx].pressure, calculateAltitude(sensor_data[idx].pressure), sensor_data[idx].temperature);
 #endif
                     }
                 }

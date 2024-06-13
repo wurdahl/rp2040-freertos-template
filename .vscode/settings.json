@@ -24,4 +24,15 @@
   "cmake.generator": "Ninja",
   "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
   "C_Cpp.errorSquiggles": "enabled",
+  "files.associations": {
+    "binary_info.h": "c",
+    "freertos.h": "c",
+    "timer.h": "c",
+    "common.h": "c",
+    "bmp5.h": "c",
+    "stdlib.h": "c",
+    "runtimestats.h": "c",
+    "stdarg.h": "c",
+    "i2c.h": "c"
+  },
 }

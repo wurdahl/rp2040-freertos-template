@@ -59,7 +59,7 @@
 #define configUSE_COUNTING_SEMAPHORES           1
 #define configQUEUE_REGISTRY_SIZE               8
 #define configUSE_QUEUE_SETS                    1
-#define configUSE_TIME_SLICING                  1
+#define configUSE_TIME_SLICING                  0
 #define configUSE_NEWLIB_REENTRANT              0
 // todo need this for lwip FreeRTOS sys_arch to compile
 #define configENABLE_BACKWARD_COMPATIBILITY     1
@@ -110,7 +110,7 @@
 
 #if FREE_RTOS_KERNEL_SMP // set by the RP2040 SMP port of FreeRTOS
 /* SMP port only */
-#define configNUMBER_OF_CORES                   2
+#define configNUMBER_OF_CORES                   1
 #define configTICK_CORE                         0
 #define configRUN_MULTIPLE_PRIORITIES           1
 #define configUSE_CORE_AFFINITY                 1

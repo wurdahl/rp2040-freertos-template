@@ -14,7 +14,11 @@
 #include "hardware/i2c.h"
 #include "pico/binary_info.h"
 #include "hardware/gpio.h"
+//#include "FreeRTOS.h"
+//#include "semphr.h"
 //#include "error.h"
+
+//extern SemaphoreHandle_t i2cMutex;
 
 #define I2C_PORT i2c0
 #define SDA_PIN PICO_DEFAULT_I2C_SDA_PIN
@@ -50,6 +54,9 @@ BMI08_INTF_RET_TYPE bmi08_i2c_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t
 {
     uint8_t device_addr = *(uint8_t*)intf_ptr;
 
+    // xSemaphoreTake( i2cMutex, portMAX_DELAY );
+    // {
+
    // Write the register address to the device
     int write_result = i2c_write_blocking(I2C_PORT, device_addr, &reg_addr, 1, TRUE);
     if (write_result == PICO_ERROR_GENERIC || write_result != 1) {
@@ -61,6 +68,8 @@ BMI08_INTF_RET_TYPE bmi08_i2c_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t
     if (read_result == PICO_ERROR_GENERIC || read_result != len) {
         return BMI08_E_COM_FAIL;
     }
+    // }
+    // xSemaphoreGive( i2cMutex );
 
     return BMI08_OK;
 }

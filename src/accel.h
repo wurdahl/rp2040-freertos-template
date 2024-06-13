@@ -180,7 +180,9 @@ void BMI_ACC_FIFO(void *pvParameters){
 
         //do a premptive reset of the accel because it might have already been on
         //DOES NOT WORK - WOULD BE REALLY COOL IF IT DID
-        //bmi08a_soft_reset(&bmi08dev);
+        // bmi08a_soft_reset(&bmi08dev);
+        // rslt = init_bmi08();
+        // bmi08_error_codes_print_result("init_bmi08", rslt);
 
         /*Enable data ready interrupts*/
         rslt = enable_bmi08_interrupt();
@@ -212,7 +214,11 @@ void BMI_ACC_FIFO(void *pvParameters){
                 xWasDelayed = xTaskDelayUntil(&xLastWakeTime, xFrequency);
 
                 if(xWasDelayed==pdFALSE){
-                    printf("****ACCELERATION TASK WAS DELAYED****");
+                    xSemaphoreTake( printMutex, portMAX_DELAY );
+                    {
+                        printf("****ACCELERATION TASK WAS DELAYED****");
+                    }
+                    xSemaphoreGive( printMutex );
                 }
 
                 rslt = bmi08a_get_data_int_status(&status, &bmi08dev);
@@ -220,52 +226,56 @@ void BMI_ACC_FIFO(void *pvParameters){
 
                 if (status & BMI08_ACCEL_FIFO_WM_INT)
                 {
-                    printf("\nIteration : %d\n", attempt);
-
-                    /* Update FIFO structure */
-                    fifo_frame.data = fifo_data;
-                    fifo_frame.length = BMI08_ACC_FIFO_RAW_DATA_USER_LENGTH;
-
-                    accel_length = BMI08_ACC_FIFO_WM_EXTRACTED_DATA_FRAME_COUNT;
-
-                    rslt = bmi08a_get_fifo_length(&fifo_length, &bmi08dev);
-                    bmi08_error_codes_print_result("bmi08a_get_fifo_length", rslt);
-
-                    rslt = bmi08a_get_fifo_wm(&wml, &bmi08dev);
-                    bmi08_error_codes_print_result("bmi08a_get_fifo_length", rslt);
-
-                    printf("Watermark level : %d\n", wml);
-
-                    printf("FIFO buffer size : %d\n", fifo_frame.length);
-                    printf("FIFO length available : %d\n", fifo_length);
-
-                    printf("Requested data frames before parsing: %d\n", accel_length);
-
-                    if (rslt == BMI08_OK)
+                    xSemaphoreTake( printMutex, portMAX_DELAY );
                     {
-                        /* Read FIFO data */
-                        rslt = bmi08a_read_fifo_data(&fifo_frame, &bmi08dev);
-                        bmi08_error_codes_print_result("bmi08a_read_fifo_data", rslt);
+                        printf("\nIteration : %d\n", attempt);
 
-                        /* Parse the FIFO data to extract accelerometer data from the FIFO buffer */
-                        rslt = bmi08a_extract_accel(bmi08_accel, &accel_length, &fifo_frame, &bmi08dev);
-                        bmi08_error_codes_print_result("bmi08a_extract_accel", rslt);
+                        /* Update FIFO structure */
+                        fifo_frame.data = fifo_data;
+                        fifo_frame.length = BMI08_ACC_FIFO_RAW_DATA_USER_LENGTH;
 
-                        printf("Parsed accelerometer frames: %d\n", accel_length);
+                        accel_length = BMI08_ACC_FIFO_WM_EXTRACTED_DATA_FRAME_COUNT;
 
-                        printf("\nFrame_Count, X, Y, Z\n");
+                        rslt = bmi08a_get_fifo_length(&fifo_length, &bmi08dev);
+                        bmi08_error_codes_print_result("bmi08a_get_fifo_length", rslt);
 
-                        /* Print the parsed accelerometer data from the FIFO buffer */
-                        for (idx = 0; idx < accel_length; idx++)
+                        rslt = bmi08a_get_fifo_wm(&wml, &bmi08dev);
+                        bmi08_error_codes_print_result("bmi08a_get_fifo_length", rslt);
+
+                        printf("Watermark level : %d\n", wml);
+
+                        printf("FIFO buffer size : %d\n", fifo_frame.length);
+                        printf("FIFO length available : %d\n", fifo_length);
+
+                        printf("Requested data frames before parsing: %d\n", accel_length);
+
+                        if (rslt == BMI08_OK)
                         {
-                            printf("%d, %f, %f, %f\n", idx, lsb_to_mps2(bmi08_accel[idx].x,12,16), lsb_to_mps2(bmi08_accel[idx].y,12,16), lsb_to_mps2(bmi08_accel[idx].z,12,16));
+                            /* Read FIFO data */
+                            rslt = bmi08a_read_fifo_data(&fifo_frame, &bmi08dev);
+                            bmi08_error_codes_print_result("bmi08a_read_fifo_data", rslt);
+
+                            /* Parse the FIFO data to extract accelerometer data from the FIFO buffer */
+                            rslt = bmi08a_extract_accel(bmi08_accel, &accel_length, &fifo_frame, &bmi08dev);
+                            bmi08_error_codes_print_result("bmi08a_extract_accel", rslt);
+
+                            printf("Parsed accelerometer frames: %d\n", accel_length);
+
+                            printf("\nFrame_Count, X, Y, Z\n");
+
+                            /* Print the parsed accelerometer data from the FIFO buffer */
+                            for (idx = 0; idx < accel_length; idx++)
+                            {
+                                printf("%d, %f, %f, %f\n", idx, lsb_to_mps2(bmi08_accel[idx].x,12,16), lsb_to_mps2(bmi08_accel[idx].y,12,16), lsb_to_mps2(bmi08_accel[idx].z,12,16));
+                            }
+
+                            rslt = bmi08a_get_sensor_time(&bmi08dev, &sensor_time);
+                            bmi08_error_codes_print_result("bmi08a_get_sensor_time", rslt);
+
+                            printf("Sensor time : %.4lf   s\n", (sensor_time * BMI08_SENSORTIME_RESOLUTION));
                         }
-
-                        rslt = bmi08a_get_sensor_time(&bmi08dev, &sensor_time);
-                        bmi08_error_codes_print_result("bmi08a_get_sensor_time", rslt);
-
-                        printf("Sensor time : %.4lf   s\n", (sensor_time * BMI08_SENSORTIME_RESOLUTION));
                     }
+                    xSemaphoreGive( printMutex );
 
                     attempt++;
                 }

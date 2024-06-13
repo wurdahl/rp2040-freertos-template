@@ -63,7 +63,7 @@ int main(){
     xQueue = xQueueCreate(1,sizeof(uint));
 
     xTaskCreate(task1,"Task1", 256, NULL, 1, NULL);
-    //xTaskCreate(BMP5PressureWaterMark,"Pressure", 8192, NULL, 10, NULL);
+    xTaskCreate(BMP5PressureWaterMark,"Pressure", 8192, NULL, 10, NULL);
     xTaskCreate(BMI_ACC_FIFO,"Acceleration",8192, NULL, 10, NULL);
     xTaskCreate(runtime_stats_task, "Runtime_Stats_Task", 1024, NULL, 3, NULL);
 

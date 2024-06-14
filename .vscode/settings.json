@@ -33,6 +33,7 @@
     "stdlib.h": "c",
     "runtimestats.h": "c",
     "stdarg.h": "c",
-    "i2c.h": "c"
+    "i2c.h": "c",
+    "gpio.h": "c"
   },
 }

@@ -9,8 +9,6 @@
 #include "hardware/timer.h"
 #include <math.h>
 
-static SemaphoreHandle_t i2cMutex = NULL;
-
 #include "common.h"
 #include "bmp5.h"
 
@@ -56,14 +54,13 @@ int main(){
     printf("program beginning\n");
 
     printMutex = xSemaphoreCreateMutex();
-    i2cMutex = xSemaphoreCreateMutex();
 
     configureTimerForRunTimeStats();
 
     xQueue = xQueueCreate(1,sizeof(uint));
 
     xTaskCreate(task1,"Task1", 256, NULL, 1, NULL);
-    xTaskCreate(BMP5PressureWaterMark,"Pressure", 8192, NULL, 10, NULL);
+    //xTaskCreate(BMP5PressureWaterMark,"Pressure", 8192, NULL, 10, NULL);
     xTaskCreate(BMI_ACC_FIFO,"Acceleration",8192, NULL, 10, NULL);
     xTaskCreate(runtime_stats_task, "Runtime_Stats_Task", 1024, NULL, 3, NULL);
 

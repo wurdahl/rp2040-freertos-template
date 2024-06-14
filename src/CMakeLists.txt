@@ -14,6 +14,7 @@ target_link_libraries(${ProjectName}
     COMMONBMP5
     BMI08X
     COMMONBMI08X
+    I2CLIB
 )
 
 

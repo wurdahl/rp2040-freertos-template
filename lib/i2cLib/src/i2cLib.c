@@ -75,11 +75,13 @@ bool i2c_write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t len, uint8_t 
 }
 
 bool init_i2cLib(){
+    if(i2cMutex == NULL){
+        i2cMutex = xSemaphoreCreateMutex();
+    }
+
     if(initalized){
         return true;
     }else initalized = true;
-
-    i2cMutex = xSemaphoreCreateMutex();
 
     xSemaphoreTake( i2cMutex, portMAX_DELAY );
     // Initialize I2C at 100 kHz

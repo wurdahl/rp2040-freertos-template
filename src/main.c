@@ -15,6 +15,8 @@
 #include "bmi08x.h"
 #include "commonBMI08X.h"
 
+#include "i2cLib.h"
+
 //mutex for protecting print commands
 static SemaphoreHandle_t printMutex = NULL;
 
@@ -59,9 +61,11 @@ int main(){
 
     xQueue = xQueueCreate(1,sizeof(uint));
 
+    init_i2cLib();
+
     xTaskCreate(task1,"Task1", 256, NULL, 1, NULL);
-    //xTaskCreate(BMP5PressureWaterMark,"Pressure", 8192, NULL, 10, NULL);
-    xTaskCreate(BMI_ACC_FIFO,"Acceleration",8192, NULL, 10, NULL);
+    xTaskCreate(BMI_ACC_FIFO,"Acceleration",8192, NULL, 11, NULL);
+    xTaskCreate(BMP5PressureWaterMark,"Pressure", 8192, NULL, 10, NULL);
     xTaskCreate(runtime_stats_task, "Runtime_Stats_Task", 1024, NULL, 3, NULL);
 
     //If using multicore, then use these functions to start the sampling tasks

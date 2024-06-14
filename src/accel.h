@@ -214,11 +214,11 @@ void BMI_ACC_FIFO(void *pvParameters){
                 xWasDelayed = xTaskDelayUntil(&xLastWakeTime, xFrequency);
 
                 if(xWasDelayed==pdFALSE){
-                    xSemaphoreTake( printMutex, portMAX_DELAY );
-                    {
+                    // xSemaphoreTake( printMutex, portMAX_DELAY );
+                    // {
                         printf("****ACCELERATION TASK WAS DELAYED****");
-                    }
-                    xSemaphoreGive( printMutex );
+                    // }
+                    // xSemaphoreGive( printMutex );
                 }
 
                 rslt = bmi08a_get_data_int_status(&status, &bmi08dev);
@@ -226,8 +226,8 @@ void BMI_ACC_FIFO(void *pvParameters){
 
                 if (status & BMI08_ACCEL_FIFO_WM_INT)
                 {
-                    xSemaphoreTake( printMutex, portMAX_DELAY );
-                    {
+                    // xSemaphoreTake( printMutex, portMAX_DELAY );
+                    // {
                         printf("\nIteration : %d\n", attempt);
 
                         /* Update FIFO structure */
@@ -274,8 +274,8 @@ void BMI_ACC_FIFO(void *pvParameters){
 
                             printf("Sensor time : %.4lf   s\n", (sensor_time * BMI08_SENSORTIME_RESOLUTION));
                         }
-                    }
-                    xSemaphoreGive( printMutex );
+                    // }
+                    // xSemaphoreGive( printMutex );
 
                     attempt++;
                 }

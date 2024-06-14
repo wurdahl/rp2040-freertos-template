@@ -158,7 +158,7 @@ int8_t bmp5_interface_init(struct bmp5_dev *bmp5_dev, uint8_t intf)
 {
     printf("SDA_PIN: %d, SCL_PIN: %d\n", SDA_PIN, SCL_PIN);
 
-    init_i2cLib();
+    //init_i2cLib();
 
     dev_addr = BMP5_I2C_ADDR_PRIM;
     bmp5_dev->read = bmp5_i2c_read;

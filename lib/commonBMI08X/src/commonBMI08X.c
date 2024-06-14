@@ -113,7 +113,7 @@ int8_t bmi08_interface_init(struct bmi08_dev *bmi08, uint8_t intf, uint8_t varia
    
     printf("SDA_PIN: %d, SCL_PIN: %d\n", SDA_PIN, SCL_PIN);
 
-    init_i2cLib();
+    //init_i2cLib();
 
     //initialize things
     acc_dev_add = BMI08_ACCEL_I2C_ADDR_PRIMARY;

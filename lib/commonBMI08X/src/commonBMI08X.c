@@ -14,11 +14,11 @@
 #include "hardware/i2c.h"
 #include "pico/binary_info.h"
 #include "hardware/gpio.h"
-//#include "FreeRTOS.h"
-//#include "semphr.h"
+#include "FreeRTOS.h"
+#include "semphr.h"
 //#include "error.h"
 
-//extern SemaphoreHandle_t i2cMutex;
+extern SemaphoreHandle_t i2cMutex;
 
 #define I2C_PORT i2c0
 #define SDA_PIN PICO_DEFAULT_I2C_SDA_PIN

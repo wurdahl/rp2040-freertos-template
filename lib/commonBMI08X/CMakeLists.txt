@@ -9,6 +9,7 @@ add_library(COMMONBMI08X STATIC
 target_include_directories(COMMONBMI08X PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_include_directories(COMMONBMI08X PUBLIC lib/FreeRTOS-Kernel/include)
+target_include_directories(COMMONBMI08X PUBLIC /../src)
 
 # Link the BMP3 library with the common library
-target_link_libraries(COMMONBMI08X BMI08X pico_stdlib hardware_i2c)
+target_link_libraries(COMMONBMI08X BMI08X pico_stdlib hardware_i2c FreeRTOS-Kernel-Heap4)

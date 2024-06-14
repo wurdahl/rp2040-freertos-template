@@ -26,9 +26,12 @@ static SemaphoreHandle_t printMutex = NULL;
 #include "accel.h"
 //This includes all of the helper functions and the task function for reporting CPU usage stats
 #include "runtimeStats.h"
+//This includes all of the helper functions and the task functions for sampling the magnetometer
+#include "mag.h"
 
 static QueueHandle_t xQueue = NULL;
 
+#define TASK_1_FREQ 100
 
 void task1(void *pvParameters){
 
@@ -66,6 +69,7 @@ int main(){
     xTaskCreate(task1,"Task1", 256, NULL, 1, NULL);
     xTaskCreate(BMI_ACC_FIFO,"Acceleration",8192, NULL, 11, NULL);
     xTaskCreate(BMP5PressureWaterMark,"Pressure", 8192, NULL, 10, NULL);
+    xTaskCreate(magPolling, "Magnetometer", 8192, NULL,9,NULL);
     xTaskCreate(runtime_stats_task, "Runtime_Stats_Task", 1024, NULL, 3, NULL);
 
     //If using multicore, then use these functions to start the sampling tasks

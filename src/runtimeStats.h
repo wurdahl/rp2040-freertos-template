@@ -55,6 +55,6 @@ void printRunTimeStats(void) {
 void runtime_stats_task(void *pvParameters) {
     while (true) {
         printRunTimeStats();
-        vTaskDelay(pdMS_TO_TICKS(5000)); // Delay for 5 seconds
+        vTaskDelay(pdMS_TO_TICKS(2000)); // Delay for 2 seconds
     }
 }

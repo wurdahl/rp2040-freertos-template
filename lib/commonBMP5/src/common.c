@@ -68,8 +68,6 @@ BMP5_INTF_RET_TYPE bmp5_i2c_write(uint8_t reg_addr, const uint8_t *reg_data, uin
     if(result){
         return BMP5_OK;
     }else return BMP5_E_COM_FAIL;
-    
-    return BMP5_OK;
 
 }
 

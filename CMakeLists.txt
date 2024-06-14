@@ -23,6 +23,8 @@ add_subdirectory(lib/commonBMP5)
 add_subdirectory(lib/BMI08X)
 add_subdirectory(lib/commonBMI08X)
 add_subdirectory(lib/i2cLib)
+add_subdirectory(lib/BMM350)
+add_subdirectory(lib/commonBMM350)
 
 # if you have anything in "lib" folder then uncomment below - remember to add a CMakeLists.txt
 # file to the "lib" directory

@@ -14,10 +14,10 @@ target_link_libraries(${ProjectName}
     COMMONBMP5
     BMI08X
     COMMONBMI08X
+    BMM350
+    COMMONBMM350
     I2CLIB
 )
-
-
 
 pico_add_extra_outputs(${ProjectName})
 

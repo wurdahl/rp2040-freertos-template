@@ -33,8 +33,6 @@
 #define FIFO_MAX_SIZE     UINT16_C(512)
 
 #define PRESSURE_READING_FREQ   100
-#define TASK_1_FREQ             100
-#define ACCEL_READING_FREQ      100
 
 #define BMP5_THRESHOLD_LEVEL 10
 

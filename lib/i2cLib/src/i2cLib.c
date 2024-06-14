@@ -77,7 +77,7 @@ bool i2c_write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t len, uint8_t 
 bool init_i2cLib(){
     if(initalized){
         return true;
-    }
+    }else initalized = true;
 
     i2cMutex = xSemaphoreCreateMutex();
 
@@ -97,8 +97,6 @@ bool init_i2cLib(){
     bi_decl(bi_2pins_with_func(SDA_PIN, SCL_PIN, GPIO_FUNC_I2C));
 
     xSemaphoreGive( i2cMutex );
-
-    initalized = true;
 
     return true;
 

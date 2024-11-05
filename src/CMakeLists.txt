@@ -30,3 +30,8 @@ target_link_libraries(${ProjectName} pico_stdlib)
 pico_enable_stdio_usb(${ProjectName} 1)
 pico_enable_stdio_uart(${ProjectName} 0)
 
+# target_compile_definitions(${ProjectName} PUBLIC
+#     PICO_DEFAULT_UART_TX_PIN=16
+#     PICO_DEFAULT_UART_RX_PIN=17            
+# )
+

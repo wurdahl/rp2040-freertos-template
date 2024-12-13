@@ -70,7 +70,7 @@ int main(){
     xTaskCreate(BMI_ACC_FIFO,"Acceleration",8192, NULL, 11, NULL);
     xTaskCreate(BMP5PressureWaterMark,"Pressure", 8192, NULL, 10, NULL);
     xTaskCreate(magPolling, "Magnetometer", 8192, NULL,9,NULL);
-    xTaskCreate(runtime_stats_task, "Runtime_Stats_Task", 1024, NULL, 3, NULL);
+    xTaskCreate(runtime_stats_task, "Runtime_Stats_Task", 1024, NULL, 15, NULL);
 
     //If using multicore, then use these functions to start the sampling tasks
     //xTaskCreateAffinitySet(BMP5PressureWaterMark, "Pressure", 8192, NULL, 11, 1, NULL);

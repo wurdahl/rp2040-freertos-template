@@ -23,6 +23,15 @@
 /* Watermark level for accel */
 #define BMI08_ACC_FIFO_WATERMARK_LEVEL                UINT16_C(10)
 
+/* Buffer size allocated to store raw FIFO data */
+#define BMI08_FIFO_RAW_DATA_BUFFER_SIZE        UINT16_C(600)
+
+/* Length of data to be read from FIFO */
+#define BMI08_FIFO_RAW_DATA_USER_LENGTH        UINT16_C(600)
+
+/* Number of Gyro frames to be extracted from FIFO */
+#define BMI08_FIFO_EXTRACTED_DATA_FRAME_COUNT  UINT8_C(100)
+
 /* Number of Accel frames to be extracted from FIFO */
 
 /* (Each frame has 7 bytes: 1 byte header + 6 bytes accel data)
@@ -42,6 +51,12 @@ struct bmi08_sensor_data bmi08_accel[100] = { { 0 } };
 
 /*! bmi08 accel int config */
 struct bmi08_accel_int_channel_cfg accel_int_config;
+
+/*! @brief variable to hold the bmi08 gyro data */
+struct bmi08_sensor_data bmi08_gyro[100] = { { 0 } };
+
+/*! bmi08 gyro int config */
+struct bmi08_gyro_int_channel_cfg gyro_int_config;
 
 
 static int8_t init_bmi08(void)
@@ -66,7 +81,7 @@ static int8_t init_bmi08(void)
 
     if (rslt == BMI08_OK)
     {
-        bmi08dev.accel_cfg.odr = BMI08_ACCEL_ODR_100_HZ;
+        bmi08dev.accel_cfg.odr = BMI08_ACCEL_ODR_400_HZ;
 
         if (bmi08dev.variant == BMI085_VARIANT)
         {
@@ -87,8 +102,8 @@ static int8_t init_bmi08(void)
         bmi08_error_codes_print_result("bmi08xa_set_meas_conf", rslt);
 
         bmi08dev.gyro_cfg.odr = BMI08_GYRO_BW_230_ODR_2000_HZ;
-        bmi08dev.gyro_cfg.range = BMI08_GYRO_RANGE_250_DPS;
-        bmi08dev.gyro_cfg.bw = BMI08_GYRO_BW_230_ODR_2000_HZ;
+        bmi08dev.gyro_cfg.range = BMI08_GYRO_RANGE_125_DPS;
+        bmi08dev.gyro_cfg.bw = BMI08_GYRO_BW_32_ODR_100_HZ;
         bmi08dev.gyro_cfg.power = BMI08_GYRO_PM_NORMAL;
 
         rslt = bmi08g_set_power_mode(&bmi08dev);
@@ -146,8 +161,8 @@ void BMI_ACC_FIFO(void *pvParameters){
     /* To configure the FIFO accel configurations */
     struct bmi08_accel_fifo_config config;
 
-    /* Number of bytes of FIFO data */
-    uint8_t fifo_data[BMI08_ACC_FIFO_RAW_DATA_BUFFER_SIZE] = { 0 };
+    /* Number of bytes of FIFO data for accel*/
+    uint8_t fifo_data_a[BMI08_ACC_FIFO_RAW_DATA_BUFFER_SIZE] = { 0 };
 
     /* Number of accelerometer frames */
     uint16_t accel_length = BMI08_ACC_FIFO_WM_EXTRACTED_DATA_FRAME_COUNT;
@@ -163,6 +178,18 @@ void BMI_ACC_FIFO(void *pvParameters){
     /* Variable to store available fifo length */
     uint16_t fifo_length;
 
+    /* Gyroscope fifo configurations */
+    struct bmi08_gyr_fifo_config gyr_conf = { 0 };
+
+    /* Fifo frame structure */
+    struct bmi08_fifo_frame fifo = { 0 };
+
+    /* Number of gyroscope frames */
+    uint16_t gyro_length = BMI08_FIFO_EXTRACTED_DATA_FRAME_COUNT;
+
+    /* Number of bytes of FIFO data for gyroscope*/
+    uint8_t fifo_data_g[BMI08_FIFO_RAW_DATA_BUFFER_SIZE] = { 0 };
+
     /* Interface given as parameter
      *           For I2C : BMI08_I2C_INTF
      *           For SPI : BMI08_SPI_INTF
@@ -172,6 +199,8 @@ void BMI_ACC_FIFO(void *pvParameters){
      */
     rslt = bmi08_interface_init(&bmi08dev, BMI08_I2C_INTF, BMI088_VARIANT);
     bmi08_error_codes_print_result("bmi08_interface_init", rslt);
+
+    
 
     if (rslt == BMI08_OK)
     {
@@ -200,6 +229,16 @@ void BMI_ACC_FIFO(void *pvParameters){
             /* Set FIFO configuration by enabling accelerometer */
             rslt = bmi08a_set_fifo_config(&config, &bmi08dev);
             bmi08_error_codes_print_result("bmi08a_set_fifo_config", rslt);
+
+            gyr_conf.mode = BMI08_GYRO_FIFO_MODE;
+            gyr_conf.tag = BMI08_GYRO_FIFO_TAG_DISABLED;
+
+            rslt = bmi08g_set_fifo_config(&gyr_conf, &bmi08dev);
+            bmi08_error_codes_print_result("bmi08g_set_fifo_config", rslt);
+
+            /* Update FIFO structure */
+            fifo.data = fifo_data_g;
+            fifo.length = BMI08_FIFO_RAW_DATA_USER_LENGTH;
 
             //Code to run task every .1 seconds
             TickType_t xLastWakeTime;
@@ -231,7 +270,7 @@ void BMI_ACC_FIFO(void *pvParameters){
                         printf("\nIteration : %d\n", attempt);
 
                         /* Update FIFO structure */
-                        fifo_frame.data = fifo_data;
+                        fifo_frame.data = fifo_data_a;
                         fifo_frame.length = BMI08_ACC_FIFO_RAW_DATA_USER_LENGTH;
 
                         accel_length = BMI08_ACC_FIFO_WM_EXTRACTED_DATA_FRAME_COUNT;
@@ -249,8 +288,7 @@ void BMI_ACC_FIFO(void *pvParameters){
 
                         printf("Requested data frames before parsing: %d\n", accel_length);
 
-                        if (rslt == BMI08_OK)
-                        {
+                        if (rslt == BMI08_OK){
                             /* Read FIFO data */
                             rslt = bmi08a_read_fifo_data(&fifo_frame, &bmi08dev);
                             bmi08_error_codes_print_result("bmi08a_read_fifo_data", rslt);
@@ -266,7 +304,7 @@ void BMI_ACC_FIFO(void *pvParameters){
                             /* Print the parsed accelerometer data from the FIFO buffer */
                             for (idx = 0; idx < accel_length; idx++)
                             {
-                                printf("%d, %f, %f, %f\n", idx, lsb_to_mps2(bmi08_accel[idx].x,12,16), lsb_to_mps2(bmi08_accel[idx].y,12,16), lsb_to_mps2(bmi08_accel[idx].z,12,16));
+                                //printf("%d, %f, %f, %f\n", idx, lsb_to_mps2(bmi08_accel[idx].x,12,16), lsb_to_mps2(bmi08_accel[idx].y,12,16), lsb_to_mps2(bmi08_accel[idx].z,12,16));
                             }
 
                             rslt = bmi08a_get_sensor_time(&bmi08dev, &sensor_time);
@@ -274,8 +312,38 @@ void BMI_ACC_FIFO(void *pvParameters){
 
                             printf("Sensor time : %.4lf   s\n", (sensor_time * BMI08_SENSORTIME_RESOLUTION));
                         }
-                    // }
-                    // xSemaphoreGive( printMutex );
+                        if(true){
+                            gyro_length = BMI08_FIFO_EXTRACTED_DATA_FRAME_COUNT;
+
+                            rslt = bmi08g_get_fifo_config(&gyr_conf, &bmi08dev);
+                            bmi08_error_codes_print_result("bmi08g_get_fifo_config", rslt);
+
+                            rslt = bmi08g_get_fifo_length(&gyr_conf, &fifo);
+                            bmi08_error_codes_print_result("bmi08g_get_fifo_length", rslt);
+
+                            /* Read FIFO data */
+                            rslt = bmi08g_read_fifo_data(&fifo, &bmi08dev);
+                            bmi08_error_codes_print_result("bmi08g_read_fifo_data", rslt);
+
+                            printf("Gyro FIFO buffer size : %d\n", BMI08_FIFO_RAW_DATA_BUFFER_SIZE);
+                            printf("Gyro FIFO length available : %d\n\n", fifo.length);
+
+                            printf("Requested data frames before parsing: %d\n", gyro_length);
+
+                            /* Parse the FIFO data to extract gyroscope data from the FIFO buffer */
+                            bmi08g_extract_gyro(bmi08_gyro, &gyro_length, &gyr_conf, &fifo);
+                            bmi08_error_codes_print_result("bmi08g_extract_gyro", rslt);
+
+                            printf("Parsed gyroscope frames: %d\n", gyr_conf.frame_count);
+
+                            printf("\nFrame_Count, X, Y, Z\n");
+
+                            /* Print the parsed gyroscope data from the FIFO buffer */
+                            for (idx = 0; idx < gyr_conf.frame_count; idx++)
+                            {
+                                //printf("%d, %d, %d, %d\n", idx, bmi08_gyro[idx].x, bmi08_gyro[idx].y, bmi08_gyro[idx].z);
+                            }
+                        }
 
                     attempt++;
                 }

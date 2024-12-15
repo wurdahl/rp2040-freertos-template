@@ -253,11 +253,9 @@ void BMI_ACC_FIFO(void *pvParameters){
                 xWasDelayed = xTaskDelayUntil(&xLastWakeTime, xFrequency);
 
                 if(xWasDelayed==pdFALSE){
-                    // xSemaphoreTake( printMutex, portMAX_DELAY );
-                    // {
-                        printf("****ACCELERATION TASK WAS DELAYED****");
-                    // }
-                    // xSemaphoreGive( printMutex );
+                    
+                    printf("****ACCELERATION TASK WAS DELAYED****");
+                    
                 }
 
                 rslt = bmi08a_get_data_int_status(&status, &bmi08dev);

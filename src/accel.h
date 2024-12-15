@@ -81,7 +81,7 @@ static int8_t init_bmi08(void)
 
     if (rslt == BMI08_OK)
     {
-        bmi08dev.accel_cfg.odr = BMI08_ACCEL_ODR_400_HZ;
+        bmi08dev.accel_cfg.odr = BMI08_ACCEL_ODR_800_HZ;
 
         if (bmi08dev.variant == BMI085_VARIANT)
         {
@@ -101,7 +101,7 @@ static int8_t init_bmi08(void)
         rslt = bmi08xa_set_meas_conf(&bmi08dev);
         bmi08_error_codes_print_result("bmi08xa_set_meas_conf", rslt);
 
-        bmi08dev.gyro_cfg.odr = BMI08_GYRO_BW_230_ODR_2000_HZ;
+        bmi08dev.gyro_cfg.odr = BMI08_GYRO_BW_32_ODR_100_HZ;
         bmi08dev.gyro_cfg.range = BMI08_GYRO_RANGE_125_DPS;
         bmi08dev.gyro_cfg.bw = BMI08_GYRO_BW_32_ODR_100_HZ;
         bmi08dev.gyro_cfg.power = BMI08_GYRO_PM_NORMAL;
@@ -302,7 +302,7 @@ void BMI_ACC_FIFO(void *pvParameters){
                             /* Print the parsed accelerometer data from the FIFO buffer */
                             for (idx = 0; idx < accel_length; idx++)
                             {
-                                //printf("%d, %f, %f, %f\n", idx, lsb_to_mps2(bmi08_accel[idx].x,12,16), lsb_to_mps2(bmi08_accel[idx].y,12,16), lsb_to_mps2(bmi08_accel[idx].z,12,16));
+                                printf("%d, %f, %f, %f\n", idx, lsb_to_mps2(bmi08_accel[idx].x,12,16), lsb_to_mps2(bmi08_accel[idx].y,12,16), lsb_to_mps2(bmi08_accel[idx].z,12,16));
                             }
 
                             rslt = bmi08a_get_sensor_time(&bmi08dev, &sensor_time);
@@ -339,7 +339,7 @@ void BMI_ACC_FIFO(void *pvParameters){
                             /* Print the parsed gyroscope data from the FIFO buffer */
                             for (idx = 0; idx < gyr_conf.frame_count; idx++)
                             {
-                                //printf("%d, %d, %d, %d\n", idx, bmi08_gyro[idx].x, bmi08_gyro[idx].y, bmi08_gyro[idx].z);
+                                printf("%d, %d, %d, %d\n", idx, bmi08_gyro[idx].x, bmi08_gyro[idx].y, bmi08_gyro[idx].z);
                             }
                         }
 
